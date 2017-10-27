@@ -9,6 +9,7 @@ __email__ = "pmantini@uh.edu"
 __version__ = "1.0.0"
 
 import cv2
+
 import sys
 from DFT.Filtering import Filtering
 from datetime import datetime
