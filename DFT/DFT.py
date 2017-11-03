@@ -9,10 +9,13 @@ class DFT:
         takes as input:
         matrix: a 2d matrix
         returns a complex matrix representing fourier transform"""
+        #return np.fft.fft(matrix) #just wanted to see what is to be expected
         sx = matrix.shape[0]
         sy = matrix.shape[1]
         N = max(matrix.shape[0],matrix.shape[1])
         newimage = np.zeros((sx,sy))
+
+        W = np.exp(-1j * ((2*math.pi)/N))
         for u in range(sx):
             for v in range(sy):
                 t = 0
@@ -20,13 +23,9 @@ class DFT:
                 for i in range(sx):
                     for j in range(sy):
                         #t = t + (matrix[i,j]*math.exp((-1j.imag)*((2*math.pi)/N)*((u*i) +(v*j))))
-                        t = t + (matrix[i,j]*(math.cos(((math.pi*2)/N)*((u*i)+(v*j))) - ((((1j).imag)*math.sin(((math.pi*2)/N)*((u*i)+(v*j)))))))
-
-                newimage[u,v] = round(t)
-
-
-
-
+                        t = t + ((matrix[i,j]*(math.cos(((math.pi*2)/N)*((u*i)+(v*j)))  - (((1j)*math.sin(((math.pi*2)/N)*((u*i)+(v*j))))))))
+                        #((1j).imag)
+                newimage[u,v] = t
 
 
 
@@ -37,6 +36,7 @@ class DFT:
         matrix: a 2d matrix (DFT) usually complex
         takes as input:
         returns a complex matrix representing the inverse fourier transform"""
+        #return np.fft.ifft(matrix) #just wanted to see what is to be expected
         sx = matrix.shape[0]
         sy = matrix.shape[1]
         N = max(matrix.shape[0], matrix.shape[1])
@@ -53,8 +53,10 @@ class DFT:
 
                 newimage[u, v] = t #round(t)
 
-
-        return matrix
+        for u in range(sx):
+            for v in range(sy):
+                newimage[u,v] = math.floor(math.log(abs(newimage[u,v])))
+        return newimage
 
 
     def discrete_cosine_tranform(self, matrix):
@@ -62,6 +64,7 @@ class DFT:
         takes as input:
         matrix: a 2d matrix
         returns a matrix representing discrete cosine transform"""
+
         sx = matrix.shape[0]
         sy = matrix.shape[1]
         N = max(matrix.shape[0], matrix.shape[1])
@@ -86,10 +89,12 @@ class DFT:
         matrix: a 2d matrix
         returns a matrix representing magnitude of the dft"""
 
+
         sx = matrix.shape[0]
         sy = matrix.shape[1]
         N = max(matrix.shape[0], matrix.shape[1])
         newimage = np.zeros((sx, sy))
+
         for u in range(sx):
             for v in range(sy):
                 t = 0
@@ -97,11 +102,19 @@ class DFT:
                 for i in range(sx):
                     for j in range(sy):
                         # t = t + (matrix[i,j]*math.exp((-1j.imag)*((2*math.pi)/N)*((u*i) +(v*j))))
-                        m = (matrix[i, j] * (math.cos(((math.pi * 2) / N) * ((u * i) + (v * j))) - (
-                        (((1j)) * math.sin(((math.pi * 2) / N) * ((u * i) + (v * j)))))))
-                        m = math.sqrt(math.pow(m.real,2) + math.pow(m.imag*1j,2))#magnitude
+                        m = (matrix[i, j] * (math.pow(math.cos(((math.pi * 2) / N) * ((u * i) + (v * j))),2) - (
+                        (math.pow(math.sin(((math.pi * 2) / N) * ((u * i) + (v * j))),2)))))
+                        #m = math.sqrt(math.pow(m.real,2) + math.pow(m.imag*1j,2))#magnitude
+                        #m = 1j
+
                         t = t + m
+                #np.log(np.abs(t))
+                newimage[u, v] = float(t)
 
-                newimage[u, v] = t
 
+        mx = np.max(newimage)
+        mn = np.min(newimage)
+        for u in range(sx):
+            for v in range(sy):
+                newimage[u,v] = ((newimage[u,v] - mn)/ max(1, mx)) * (255)
         return newimage

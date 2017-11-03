@@ -10,7 +10,7 @@ class Filtering:
     filter = None
     cutoff = None
     order = None
-
+    filtername = None
     def __init__(self, image, filter_name, cutoff, order = 0):
         """initializes the variables frequency filtering on an input image
         takes as input:
@@ -19,7 +19,10 @@ class Filtering:
         cutoff: the cutoff frequency of the filter
         order: the order of the filter (only for butterworth
         returns"""
+
+
         self.image = image
+        filtername = filter_name
         if filter_name == 'ideal_l':
             self.filter = self.get_ideal_low_pass_filter
         elif filter_name == 'ideal_h':
@@ -32,7 +35,7 @@ class Filtering:
             self.filter = self.get_gaussian_low_pass_filter
         elif filter_name == 'gaussian_h':
             self.filter = self.get_gaussian_high_pass_filter
-
+        self.filtername = filter_name
         self.cutoff = cutoff
         self.order = order
 
@@ -43,7 +46,7 @@ class Filtering:
         shape: the shape of the mask to be generated
         cutoff: the cutoff frequency of the ideal filter
         returns a ideal low pass mask"""
-        print("Computing ideal low pass pask")
+
         sx = shape[0]
         sy = shape[1]
         newmask = np.zeros((sx, sy))
@@ -93,7 +96,9 @@ class Filtering:
         newmask = np.zeros((sx, sy))
         for u in range(sx):
             for v in range(sy):
-                newmask[u,v] = .5
+                D = pow(pow(u - (sx / 2), 2) + pow((v - (sy / 2)), 2), 1 / 2)
+                h = (1.0/(1.0+pow((D/cutoff),2*order)))
+                newmask[u,v] = h
         
         return newmask
 
@@ -111,7 +116,15 @@ class Filtering:
         newmask = np.zeros((sx, sy))
         for u in range(sx):
             for v in range(sy):
-                newmask[u,v] = .5
+                D = pow(pow(u - (sx / 2), 2) + pow((v - (sy / 2)), 2), 1 / 2)
+                if (D <= 0.0):
+                    h = 0
+                else:
+                    f = (cutoff/D)
+                    e = (1.0 + pow(f, 2 * order))
+                    h = (1.0 / e)
+
+                newmask[u, v] = h
         
         return newmask
 
@@ -126,7 +139,9 @@ class Filtering:
         newmask = np.zeros((sx, sy))
         for u in range(sx):
             for v in range(sy):
-                newmask[u, v] = .5
+                D = pow(pow(u - (sx / 2), 2) + pow((v - (sy / 2)), 2), 1 / 2)
+                h = np.exp((-(pow(D,2)))/(2*pow(cutoff,2)))
+                newmask[u, v] = h
 
         return newmask
 
@@ -144,7 +159,9 @@ class Filtering:
         newmask = np.zeros((sx, sy))
         for u in range(sx):
             for v in range(sy):
-                newmask[u, v] = .5
+                D = pow(pow(u - (sx / 2), 2) + pow((v - (sy / 2)), 2), 1 / 2)
+                h = 1-np.exp(-(pow(D, 2)) / (2*pow( cutoff, 2)))
+                newmask[u, v] = h
 
         return newmask
 
@@ -162,19 +179,28 @@ class Filtering:
         sy = image.shape[1]
 
         newimage = np.zeros((sx, sy))
-        mn = 255
+        b = False
+        mn = 0
         mx = 0
         for u in range(sx):
             for v in range(sy):
-                t = newimage[u,v]
-                mn = min(t,mn)
-                mx = max(t,mx)
+                t = image[u,v]
+                if (b):
+                    mn = min(t,mn)
+                    mx = max(t,mx)
+                else:
+                    b = True
+                    mn = t
+                    mx = t
                 #get max and min for contrast stretch
 
-        if (mn < mx):
-            for u in range(sx):
-                for v in range(sy):
+
+        for u in range(sx):
+            for v in range(sy):
+                if (mn < mx):
                     newimage[u, v] = 255-(255*((newimage[u, v]-mn)/(mx-mn))) #full contrast stretch and negative
+                else:
+                    newimage[u, v] = mx
 
         return newimage
 
@@ -201,6 +227,7 @@ class Filtering:
                 t = image[u,v]*(mask[u,v])
                 newimage[u,v] = t
 
+        #Actual convolution below. Takes an eternity to process...
         #for u in range(sx):
             #for v in range(sy):
                 #t = 0
@@ -213,9 +240,18 @@ class Filtering:
         return newimage
 
     def normalize(self,im):
-        m = np.log(np.abs(im))
-        m = m * (255 / max(1, np.max(m)))
-        return m
+        im = np.log(np.abs(im))
+        im = im * (255 / max(1, np.max(im)))
+        mx = np.max(im)
+        mn = np.min(im)
+        for u in range(im.shape[0]):
+            for v in range(im.shape[1]):
+                im[u,v] = (255*((im[u, v] - mn) / (mx - mn)))
+
+
+
+
+        return im
     def filtering(self):
         """Performs frequency filtering on an input image
         returns a filtered image, magnitude of DFT, magnitude of filtered DFT        
@@ -230,14 +266,29 @@ class Filtering:
         fshift = np.fft.fftshift(f)
 
         #3. get the mask (write your code in functions provided above) the functions can be called by self.filter(shape, cutoff, order)
-        msk = self.filter(fshift.shape, self.cutoff)
-        print(msk.shape)
-        #if (filter == self.get_ideal_low_pass_filter):
-            #msk = self.get_ideal_low_pass_filter(fshift.shape,self.cutoff)
-        #elif (filter == self.get_ideal_high_pass_filter):
-            #msk = self.get_ideal_high_pass_filter(fshift.shape, self.cutoff)
-            #Butterworth
-            #Gaussian
+        msk = np.zeros(fshift.shape)
+
+        if self.filtername == 'ideal_l':
+            print("ideal_l filter")
+            msk = self.get_ideal_low_pass_filter(fshift.shape, self.cutoff)
+        elif self.filtername == 'ideal_h':
+            print("ideal_h filter")
+            msk = self.get_ideal_high_pass_filter(fshift.shape, self.cutoff)
+        elif self.filtername == 'butterworth_l':
+            print("butterworth_l filter")
+            msk = self.get_butterworth_low_pass_filter(fshift.shape, self.cutoff, self.order)
+        elif self.filtername == 'butterworth_h':
+            print("butterworth_h filter")
+            msk = self.get_butterworth_high_pass_filter(fshift.shape, self.cutoff, self.order)
+        elif self.filtername == 'gaussian_l':
+            print("gaussian_l filter")
+            msk = self.get_gaussian_low_pass_filter(fshift.shape, self.cutoff)
+        elif self.filtername == 'gaussian_h':
+            print("gaussian_h filter")
+            msk = self.get_gaussian_high_pass_filter(fshift.shape, self.cutoff)
+        else:
+            print("unknown filter: " + self.filtername)
+            msk = self.get_ideal_low_pass_filter(fshift.shape, self.cutoff)
 
         #4. filter the image frequency based on the mask (Convolution theorem)
         print("Convolving")
@@ -262,9 +313,13 @@ class Filtering:
 
 
         magnitudes = np.log(np.abs(img))
-        magnitudes = magnitudes*(255/max(1,np.max(magnitudes))) #full contrast stretch
+        magnitudes = magnitudes*(255/max(1,np.max(magnitudes)-np.min(magnitudes))) #full contrast stretch
         #co = co * (255 / max(1, np.max(co)))  # full contrast stretch
         #img = img * (255 / max(1, np.max(img)))  # full contrast stretch
-        negative = self.post_process_image(img)
-
-        return [self.image, np.uint8(self.normalize(co)), np.uint8(magnitudes)]
+        #negative = self.post_process_image(magnitudes)
+        msk = msk * (255 / max(1, np.max(msk)))
+        img = np.log(np.abs(img))
+        img = img * (255 / max(1, np.max(img)))
+        co = np.log(np.abs(co))
+        co = co * (255 / max(1, np.max(co)))
+        return [np.uint8(self.normalize(fshift)), np.uint8(co), np.uint8(self.normalize(img))]

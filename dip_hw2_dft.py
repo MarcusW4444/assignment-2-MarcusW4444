@@ -33,7 +33,6 @@ def main():
 
     print("---------------Input Matrix----------------")
     print(input_matrix)
-    #display_image("Input", input_matrix)
     dft_obj = DFT.DFT()
 
     #Compute DFT
