@@ -22,6 +22,20 @@ def display_image(window_name, image):
     cv2.imshow(window_name, image)
     cv2.waitKey(0)
 
+def printmatrix(matrix):
+    print("[",end="")
+    for i in range(matrix.shape[0]):
+        if (i != 0):
+            print(" ", end="")
+        print("[", end="")
+        for j in range(matrix.shape[1]):
+            if(j != 0):
+                print(" ",end="")
+            print(matrix[i,j],end="")
+            if ((j == (matrix.shape[1]-1)) and (i != (matrix.shape[0]-1))):
+                print("]")
+
+    print("]]")
 
 def main():
     """ The main funtion that parses input arguments, calls the approrpiate
@@ -32,28 +46,28 @@ def main():
     input_matrix = np.int_(rand(15,15)*256)
 
     print("---------------Input Matrix----------------")
-    print(input_matrix)
+    printmatrix(input_matrix)
     dft_obj = DFT.DFT()
 
     #Compute DFT
     fft_matrix = dft_obj.forward_transform(input_matrix)
     print("---------------Forward Fourier Transform----------------")
-    print(fft_matrix)
+    printmatrix(fft_matrix)
 
     #Compute the inverse Fourier transfrom
     ift_matrix = dft_obj.inverse_transform(fft_matrix)
     print("---------------Inverse Fourier Transform----------------")
-    print(ift_matrix)
+    printmatrix(ift_matrix)
     
     #Compute the magnitude of the dft
     magnitude_matrix = dft_obj.magnitude(ift_matrix)
     print("---------------Magnitude of the inverse Forward Fourier Transform ----------------")
-    print(magnitude_matrix)
+    printmatrix(magnitude_matrix)
 
     # Compute the discrete cosine transform
     dct_matrix = dft_obj.discrete_cosine_tranform(input_matrix)
     print("---------------Discrete Cosine Transform----------------")
-    print(dct_matrix)
+    printmatrix(dct_matrix)
 
 
 

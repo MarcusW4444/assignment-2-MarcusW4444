@@ -13,7 +13,8 @@ class DFT:
         sx = matrix.shape[0]
         sy = matrix.shape[1]
         N = max(matrix.shape[0],matrix.shape[1])
-        newimage = np.zeros((sx,sy))
+        newimage = np.zeros((sx,sy),dtype=np.complex)
+
 
         W = np.exp(-1j * ((2*math.pi)/N))
         for u in range(sx):
@@ -40,22 +41,28 @@ class DFT:
         sx = matrix.shape[0]
         sy = matrix.shape[1]
         N = max(matrix.shape[0], matrix.shape[1])
-        newimage = np.zeros((sx, sy))
+        newimage = np.zeros((sx,sy),dtype=np.complex)
         for u in range(sx):
             for v in range(sy):
                 t = 0
 
                 for i in range(sx):
                     for j in range(sy):
-                         t = t + (matrix[i,j]*math.exp((1j.imag)*((2*math.pi)/N)*((u*i) +(v*j))))
+                        t = t + ((matrix[i, j] * (math.cos(((math.pi * 2) / N) * ((u * i) + (v * j))) - (
+                        ((1j) * math.sin(((math.pi * 2) / N) * ((u * i) + (v * j))))))))
+
+                         #t = t + (matrix[i,j]*math.exp((1j.imag)*((2*math.pi)/N)*((u*i) +(v*j))))
+
                         #t = t + (matrix[i, j] * (math.cos(((math.pi * 2) / N) * ((u * i) + (v * j))) + (
                         #(((1j).imag) * math.sin(((math.pi * 2) / N) * ((u * i) + (v * j)))))))
 
                 newimage[u, v] = t #round(t)
 
-        for u in range(sx):
-            for v in range(sy):
-                newimage[u,v] = math.floor(math.log(abs(newimage[u,v])))
+        if (False):
+            for u in range(sx):
+                for v in range(sy):
+                    newimage[u,v] = math.floor(math.log(abs(newimage[u,v])))
+
         return newimage
 
 
@@ -68,7 +75,8 @@ class DFT:
         sx = matrix.shape[0]
         sy = matrix.shape[1]
         N = max(matrix.shape[0], matrix.shape[1])
-        newimage = np.zeros((sx, sy))
+        newimage = np.zeros((sx,sy),dtype=np.complex)
+
         for u in range(sx):
             for v in range(sy):
                 t = 0
@@ -97,19 +105,21 @@ class DFT:
 
         for u in range(sx):
             for v in range(sy):
-                t = 0
+                t = matrix[u, v]
+                if (False):
+                    t = 0
+                    for i in range(sx):
+                        for j in range(sy):
+                            # t = t + (matrix[i,j]*math.exp((-1j.imag)*((2*math.pi)/N)*((u*i) +(v*j))))
+                            m = (matrix[i, j] * (math.pow(math.cos(((math.pi * 2) / N) * ((u * i) + (v * j))),2) - (
+                            (math.pow(math.sin(((math.pi * 2) / N) * ((u * i) + (v * j))),2)))))
 
-                for i in range(sx):
-                    for j in range(sy):
-                        # t = t + (matrix[i,j]*math.exp((-1j.imag)*((2*math.pi)/N)*((u*i) +(v*j))))
-                        m = (matrix[i, j] * (math.pow(math.cos(((math.pi * 2) / N) * ((u * i) + (v * j))),2) - (
-                        (math.pow(math.sin(((math.pi * 2) / N) * ((u * i) + (v * j))),2)))))
-                        #m = math.sqrt(math.pow(m.real,2) + math.pow(m.imag*1j,2))#magnitude
-                        #m = 1j
+                            #m = 1j
 
-                        t = t + m
+                            t = t + m
+                y = math.sqrt(math.pow(t.real, 2) + math.pow(t.imag, 2))  # magnitude
                 #np.log(np.abs(t))
-                newimage[u, v] = float(t)
+                newimage[u, v] = y
 
 
         mx = np.max(newimage)

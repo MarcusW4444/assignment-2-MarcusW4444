@@ -117,12 +117,15 @@ class Filtering:
         for u in range(sx):
             for v in range(sy):
                 D = pow(pow(u - (sx / 2), 2) + pow((v - (sy / 2)), 2), 1 / 2)
-                if (D <= 0.0):
-                    h = 0
-                else:
-                    f = (cutoff/D)
-                    e = (1.0 + pow(f, 2 * order))
-                    h = (1.0 / e)
+                h = 1-(1.0 / (1.0 + pow((D / cutoff), 2 * order)))
+                #print((D,h))
+                if(False):
+                    if (D <= 0.0):
+                        h = 0
+                    else:
+                        f = (cutoff/D)
+                        e = (1.0 + pow(f, 2 * order))
+                        h = (1.0 / e)
 
                 newmask[u, v] = h
         
@@ -240,17 +243,24 @@ class Filtering:
         return newimage
 
     def normalize(self,im):
-        im = np.log(np.abs(im))
-        im = im * (255 / max(1, np.max(im)))
         mx = np.max(im)
         mn = np.min(im)
+
+        im = np.log(np.abs(im))
+
+
+        mx = np.max(im)
+        mn = np.min(im)
+        #print((mx, mn))
         for u in range(im.shape[0]):
             for v in range(im.shape[1]):
-                im[u,v] = (255*((im[u, v] - mn) / (mx - mn)))
+                val = im[u, v]
 
 
+                im[u,v] =\
+                    (255*((val - mn) / (mx - mn)))
 
-
+        im = im * (255 / max(1, np.max(im)))
         return im
     def filtering(self):
         """Performs frequency filtering on an input image
@@ -289,13 +299,17 @@ class Filtering:
         else:
             print("unknown filter: " + self.filtername)
             msk = self.get_ideal_low_pass_filter(fshift.shape, self.cutoff)
-
+        umsk = msk
+        print((np.min(msk), np.max(msk)))
         #4. filter the image frequency based on the mask (Convolution theorem)
-        print("Convolving")
-        co = self.convolve(fshift,msk)
-        print("Done Convolving")
+        #print("Convolving")
+        #co = self.convolve(fshift,msk)
+        #print("Done Convolving")
+
         #5. compute the inverse shift
-        ishift = np.fft.ifftshift(co)
+
+        appliedfilter = fshift*msk
+        ishift = np.fft.ifftshift(appliedfilter)
 
         #6. compute the inverse fourier transform
         img = np.fft.ifft2(ishift)
@@ -314,12 +328,18 @@ class Filtering:
 
         magnitudes = np.log(np.abs(img))
         magnitudes = magnitudes*(255/max(1,np.max(magnitudes)-np.min(magnitudes))) #full contrast stretch
+
+        #appliedfilter = np.abs(appliedfilter)
+        #appliedfilter = appliedfilter * (255 / max(1, np.max(appliedfilter) - np.min(appliedfilter)))  # full contrast stretch
         #co = co * (255 / max(1, np.max(co)))  # full contrast stretch
         #img = img * (255 / max(1, np.max(img)))  # full contrast stretch
         #negative = self.post_process_image(magnitudes)
         msk = msk * (255 / max(1, np.max(msk)))
         img = np.log(np.abs(img))
         img = img * (255 / max(1, np.max(img)))
-        co = np.log(np.abs(co))
-        co = co * (255 / max(1, np.max(co)))
-        return [np.uint8(self.normalize(fshift)), np.uint8(co), np.uint8(self.normalize(img))]
+        appliedfilter = np.log(np.abs(appliedfilter ))
+        appliedfilter = appliedfilter * (255 / max(1, np.max(appliedfilter)))
+        #co = np.log(np.abs(co))
+        #co = co * (255 / max(1, np.max(co)))
+        np.log(np.abs(appliedfilter))
+        return [np.uint8(self.normalize(fshift)), appliedfilter, np.uint8(self.normalize(magnitudes))]
